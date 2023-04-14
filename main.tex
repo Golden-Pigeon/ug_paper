@@ -7,6 +7,9 @@
 \usepackage{theorem}
 \usepackage{siunitx}
 \xdusetup{
+    style = {
+        fix-input = true
+    },
     info = {
         title = {基于图像退化模型估计的真实图像\\超分辨方法研究与实现},
         author = {郑镜竹},
@@ -26,6 +29,12 @@
     }
 }
 \begin{document}
-\chapter{引言}
-SRCNN\parencite{SRCNN}。
+\chapter{绪论}
+\input{chapters/introduction.tex}
+\chapter{基于深度学习的图像超分辨率技术简介}
+\input{chapters/technoledges.tex}
+\chapter{提出的方法与实验}
+\input{chapters/methods-and-experiments.tex}
+\chapter{总结与展望}
+\input{chapters/conclusions.tex}
 \end{document}
