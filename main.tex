@@ -6,6 +6,10 @@
 \usepackage{enumitem}
 \usepackage{theorem}
 \usepackage{siunitx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{physics}
+\usepackage{bm}
 \xdusetup{
     style = {
         fix-input = true
@@ -28,6 +32,9 @@
         acknowledgements = {chapters/acknowledgements.tex}
     }
 }
+
+\def\mathbi#1{\textbf{\em #1}} 
+
 \begin{document}
 \chapter{绪论}
 \input{chapters/introduction.tex}
