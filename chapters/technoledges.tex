@@ -1,37 +1,37 @@
-\section{数学工具}
-\subsection{拉普拉斯分布}
-% 合成图像数据集往往假设低分辨率图像由高分辨率图像经高斯模糊和双三次下采样得到，使用公式表示即为：
+% \section{数学工具}
+% \subsection{拉普拉斯分布}
+% % 合成图像数据集往往假设低分辨率图像由高分辨率图像经高斯模糊和双三次下采样得到，使用公式表示即为：
+% % \begin{equation}
+% %     \mathbi{I}^{LR}=(\vb*{k}_g\otimes \mathbi{I}^{HR})\downarrow_s
+% % \end{equation}
+% 拉普拉斯分布是以法国数学家Pierre-Simon命名的一种连续概率分布，又称双指数分布。拉普拉斯分布的概率密度函数为
 % \begin{equation}
-%     \mathbi{I}^{LR}=(\vb*{k}_g\otimes \mathbi{I}^{HR})\downarrow_s
+%     f(x;\mu, b)=\frac{1}{2b}\exp(-\frac{|x-\mu|}{b})
 % \end{equation}
-拉普拉斯分布是以法国数学家Pierre-Simon命名的一种连续概率分布，又称双指数分布。拉普拉斯分布的概率密度函数为
-\begin{equation}
-    f(x;\mu, b)=\frac{1}{2b}\exp(-\frac{|x-\mu|}{b})
-\end{equation}
-其中，$\mu$为位置参数，表示其对称轴位置；$b$为尺度参数，表示其开口尺度。其概率密度函数与累计分布函数如图\ref{fig:laplace-a}\ref{fig:laplace-b}所示。在本文所基于的模型USR-DU中，作者经过实验发现真实的低分辨率图像与双三次下采样图像之间的差异呈拉普拉斯分布，如图\ref{fig:laplace-c}所示。
-\begin{figure}[h]
-    \subcaptionbox{\label{fig:laplace-a}}{\includegraphics[width=.3\linewidth]{imgs/laplace_wiki_1.png}}\hfill
-    \subcaptionbox{\label{fig:laplace-b}}{\includegraphics[width=.3\linewidth]{imgs/laplace_wiki_2.png}}\hfill
-    \subcaptionbox{\label{fig:laplace-c}}{\includegraphics[width=.4\linewidth]{imgs/laplace_usr-du.png}}
-    \caption{拉普拉斯分布：其中，图(a)为概率密度函数，图(b)为累计分布函数，图(c)为USR-DU论文中作者对真实低分辨率图像与双三次下采样图像间差异分布进行实验的结果，作者发现实际的分布近似于拉普拉斯分布而不近似于高斯分布}	
-    \label{fig:laplace}
-\end{figure}
+% 其中，$\mu$为位置参数，表示其对称轴位置；$b$为尺度参数，表示其开口尺度。其概率密度函数与累计分布函数如图\ref{fig:laplace-a}\ref{fig:laplace-b}所示。在本文所基于的模型USR-DU中，作者经过实验发现真实的低分辨率图像与双三次下采样图像之间的差异呈拉普拉斯分布，如图\ref{fig:laplace-c}所示。
+% \begin{figure}[h]
+%     \subcaptionbox{\label{fig:laplace-a}}{\includegraphics[width=.3\linewidth]{imgs/laplace_wiki_1.png}}\hfill
+%     \subcaptionbox{\label{fig:laplace-b}}{\includegraphics[width=.3\linewidth]{imgs/laplace_wiki_2.png}}\hfill
+%     \subcaptionbox{\label{fig:laplace-c}}{\includegraphics[width=.4\linewidth]{imgs/laplace_usr-du.png}}
+%     \caption{拉普拉斯分布：其中，图(a)为概率密度函数，图(b)为累计分布函数，图(c)为USR-DU论文中作者对真实低分辨率图像与双三次下采样图像间差异分布进行实验的结果，作者发现实际的分布近似于拉普拉斯分布而不近似于高斯分布}	
+%     \label{fig:laplace}
+% \end{figure}
 
-\subsection{KL散度}
-KL散度（Kullback-Leibler divergence）又称相对熵，描述了$P$，$Q$两个分布之间的差异，其中$P$为真实分布，$Q$为估计分布。对于连续随机变量，KL散度可定义为
-\begin{equation}
-    D_{\text{KL}}(P\|Q)=\int^\infty_{-\infty}p(x)\ln\frac{p(x)}{q(x)}\,\text{d}x
-\end{equation}
+% \subsection{KL散度}
+% KL散度（Kullback-Leibler divergence）又称相对熵，描述了$P$，$Q$两个分布之间的差异，其中$P$为真实分布，$Q$为估计分布。对于连续随机变量，KL散度可定义为
+% \begin{equation}
+%     D_{\text{KL}}(P\|Q)=\int^\infty_{-\infty}p(x)\ln\frac{p(x)}{q(x)}\,\text{d}x
+% \end{equation}
 
-在USR-DU中，DSN输出低分辨率图像$\vb*{y}_g$及其不确定性$\bm{\theta}$，其实质为输出了估计的低分辨率图像的分布。故为了优化网络，使其估计出正确的分布，可使用KL散度来构造损失函数
-\begin{equation}
-    \begin{aligned}
-        \mathcal{L}_{kl}&=\mathbb{E}_{\vb*{y}_g}\{D_{\text{KL}}[L(\vb*{y}_g,\bm{\theta})\|L(\vb*{y}_b,\mathbi{I})]\}  \\
-        &=\mathbb{E}_{\vb*{y}_g}[\bm{\theta}\exp(-\frac{\|\vb*{y}_g-\vb*{y}_b\|_1}{\bm{\theta}})+\|\vb*{y}_g-\vb*{y}_b\|_1-\ln\bm{\theta}-1]
-    \end{aligned}
-    \label{equ:kl}
-\end{equation}
-其中$\vb*{y}_b$为双三次下采样图像，$\mathbi{I}$为单位矩阵。
+% 在USR-DU中，DSN输出低分辨率图像$\vb*{y}_g$及其不确定性$\bm{\theta}$，其实质为输出了估计的低分辨率图像的分布。故为了优化网络，使其估计出正确的分布，可使用KL散度来构造损失函数
+% \begin{equation}
+%     \begin{aligned}
+%         \mathcal{L}_{kl}&=\mathbb{E}_{\vb*{y}_g}\{D_{\text{KL}}[L(\vb*{y}_g,\bm{\theta})\|L(\vb*{y}_b,\mathbi{I})]\}  \\
+%         &=\mathbb{E}_{\vb*{y}_g}[\bm{\theta}\exp(-\frac{\|\vb*{y}_g-\vb*{y}_b\|_1}{\bm{\theta}})+\|\vb*{y}_g-\vb*{y}_b\|_1-\ln\bm{\theta}-1]
+%     \end{aligned}
+%     \label{equ:kl}
+% \end{equation}
+% 其中$\vb*{y}_b$为双三次下采样图像，$\mathbi{I}$为单位矩阵。
 
 \section{卷积神经网络}
 \subsection{模型的结构}
@@ -62,3 +62,22 @@ KL散度（Kullback-Leibler divergence）又称相对熵，描述了$P$，$Q$两
 % 此优化目标要求、
 
 \section{超分辨率模型的评价指标}
+为了能够评判各种超分辨率模型间精度的优劣，需要采用多种指标进行评价。而不同的评价指标则拥有不同的侧重点。
+\subsection{基于参考的评价指标}
+此类指标是最常用的评价指标。其中，PSNR（Peak Signal-to-Noise Ratio，峰值信噪比）通过比较原始图像与经过处理后的图像的信噪比来衡量两张图像之间的差距，单位为分贝（dB），取值范围为0到无穷大。PSNR越大，则说明两张图像越相近。PSNR的定义式为：
+\begin{equation}
+    \text{PSNR}=10\cdot \log_{10}(\frac{\text{MAX}_I^2}{\text{MSE}})
+\end{equation}
+其中，$MAX_I$是像素的最大值，这取决于像素值是$0\sim 255$还是$0\sim 1$；MSE（Mean Square Erros）是两张图像之间的均方误差。
+
+SSIM\parencite{wang2002universal}（Structural Similarity Index Measure，结构相似性指标）除了考虑除了像PSNR考虑像素间差异以外，还考虑图像的结构、纹理、对比度等因素。SSIM没有单位，取值范围为-1到1，SSIM越大，说明两张图像相似度越高。SSIM的定义为
+\begin{equation}
+    \begin{aligned}
+        SSIM(x,y)&=[l(x,y)s(x,y)c(x,y)]
+                 &=\frac{(2\mu_x\mu_y+c_1)(2\sigma_{xy}+c_2)}{(\mu_x^2\mu_y^2+c_1)(\sigma_x^2+\sigma_y^2+c_2)}
+    \end{aligned}
+\end{equation}
+其中，$l(x,y)$代表亮度，$s(x,y)$代表结构，$c(x,y)$代表对比度。$\mu_x$、$\mu_y$代表$x、y$的均值，$\sigma_x$、$\sigma_y$代表$x、y$的方差，$\sigma_{xy}$代表$x、y$的协方差，$c_1$、$c_2$为常数。实际计算中，采用滑动窗口法，即计算图像中每一个窗口的SSIM，最后取其平均值。
+
+\subsection{基于感知的评价指标}
+以上两种评价指标基本侧重于图像的像素和结构，二者的计算较为机械，有时候PSNR和SSIM指标高的图像并不能很好地满足人类的需求，故某些工作招募志愿者用肉眼对图像进行打分，但是这种评判方式具有较大的主观性，因此需要一个能够定量评判感知质量的评价指标。而LPIPS\parencite{zhang2018perceptual}（Learned Perceptual Image Patch Similarity，学习的图像像素相似性指标）就是其中具有代表性的一个指标。此指标通过卷积神经网络来学习人类对图像的感知差异。从计算方式上来说，此指标通过计算两张图像通过预训练的卷积神经网络提取得到的特征图之间的余弦距离来评判图像间的相似性，指标越接近于0，则说明两张图像在人类感知上越相近。由于侧重点不同，有时会出现LPIPS指标很优而PSNR/SSIM很劣或者PSNR/SSIM很优LPIPS很劣的情况，这个时候就要结合需求综合分析模型的优劣。

@@ -8,8 +8,11 @@
 \usepackage{siunitx}
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{pifont}
 \usepackage{physics}
 \usepackage{bm}
+\usepackage{url}
 \xdusetup{
     style = {
         fix-input = true
@@ -27,13 +30,16 @@
         keywords = {深度学习, 超分辨率, 退化模型, 核估计},
         abstract* = {chapters/abstract-en.tex},
         keywords* = {Deep Learning, Super Resolution, Degradation Model, Kernel Estimation},
-        bib-resource = {refs/SRCNN.bib,refs/IEEEYang.bib,refs/IEEEDong.bib,refs/AlexNet.bib,refs/VGG.bib,refs/GoogleNet.bib},
+        bib-resource = {refs/AlexNet.bib,refs/CinCGAN.bib,refs/City100.bib,refs/CycleGAN.bib,refs/DIV2K.bib,refs/DPEDiphone.bib,refs/DSGAN.bib,refs/Flickr2K.bib,refs/GAN.bib,refs/GoogleNet.bib,refs/IEEEDong.bib,refs/IEEEYang.bib,refs/KULNet.bib,refs/LPIPS.bib,refs/MANet.bib,refs/RealSR.bib,refs/SRCNN.bib,refs/SRGAN.bib,refs/SSIM.bib,refs/UFPNet.bib,refs/USR-DU.bib,refs/VGG.bib},
         appendix = {chapters/appendix-a.tex},
         acknowledgements = {chapters/acknowledgements.tex}
     }
 }
 
 \def\mathbi#1{\textbf{\em #1}} 
+
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
 
 \begin{document}
 \chapter{绪论}

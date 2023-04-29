@@ -1,5 +1,5 @@
 \section{对USR-DU的分析}
-USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。图中展示了DSN对Flickr2K、DPEDiphone和RealSR-Canon数据集中图像生成低分辨率图像的效果。其中，针对模糊性较低的Flickr2K和DPEDiphone数据集，生成的低分辨率图像与真实的低分辨率图像较为相似，而对于模糊性较高的RealSR-Canon数据集，DSN生成的低分辨率图像会显得过于清晰，同时二者还存在色差的问题。对于造成这种现象的原因，我们推测是由DSN部分直接使用高分辨率图像的双三次下采样结果作为参考图像所导致的，如图虚线部分。由于DSN使用data loss和perceptual loss来对网络进行优化，这使得生成的低分辨率图像在一定程度上近似于无模糊的图像，从而远离了真实的低分辨率图像。因此，为了对此模型进一步优化，提高其泛化能力，我们提出了改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
+USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。图中展示了DSN对Flickr2K\parencite{timofte2017ntire}、DPEDiphone\parencite{ignatov2017dslr}和RealSR-Canon数据集中图像生成低分辨率图像的效果。其中，针对模糊性较低的Flickr2K和DPEDiphone数据集，生成的低分辨率图像与真实的低分辨率图像较为相似，而对于模糊性较高的RealSR-Canon数据集，DSN生成的低分辨率图像会显得过于清晰，同时二者还存在色差的问题。对于造成这种现象的原因，我们推测是由DSN部分直接使用高分辨率图像的双三次下采样结果作为参考图像所导致的，如图虚线部分。由于DSN使用data loss和perceptual loss来对网络进行优化，这使得生成的低分辨率图像在一定程度上近似于无模糊的图像，从而远离了真实的低分辨率图像。因此，为了对此模型进一步优化，提高其泛化能力，我们提出了改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
 \section{UBSR-DU}
 在无监督的超分辨率模型中，我们需要首先生成拟真的低分辨率图像，再对超分网络进行监督式的训练，而对图像的退化过程进行合理的建模将有助于提升低分辨率图像生成的精度。在本节接下来的内容中，我们将首先给出图像的退化模型，随后由此引出我们提出的改进模型UBSR-DU。
 \subsection{图像的退化过程}
@@ -31,12 +31,12 @@ USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率�
 
 \noindent\textbf{DSN的损失函数}\ \ 如图所示，改进后的DSN会产生四个张量，参考低分辨率图像$y_{ref}$、生成低分辨率图像$y_g$、生成图像的不确定性$\theta$和生成图像的特征不确定性$\sigma$。DSN生成器的损失函数使用上述张量与数据集中的真实低分辨率图像$y_r$计算，分为以下三个部分：
 
-内容损失：约束生成的图像在内容上与高分辨率图图像一致，同时能够学习到真实图像的模糊信息。由公式\ref{equ:kl}，有
+内容损失：约束生成的图像在内容上与高分辨率图图像一致，同时能够学习到真实图像的模糊信息，使用KL散度计算，有
 \begin{equation}
     \mathcal{L}_{kl}=\mathbb{E}_{\vb*{y}_g}\{D_{\text{KL}}[L(\vb*{y}_g,\bm{\theta})\|L(\vb*{y}_ref,\mathbi{I})]\}
 \end{equation}
 
-感知损失：约束生成的图像在特征域上与高分辨率图像一致，同时能够学习到真实图像的模糊信息。
+感知损失：约束生成的图像在特征域上与高分辨率图像一致，同时能够学习到真实图像的模糊信息，使用KL散度计算，有
 \begin{equation}
     \mathcal{L}_{kl}=\mathbb{E}_{\vb*{y}_g}\{D_{\text{KL}}[L(\Phi(\vb*{y}_g),\bm{\theta})\|L(\Phi(\vb*{y}_ref),\mathbi{I})]\}
 \end{equation}
@@ -56,13 +56,49 @@ RealSR通过调整相机的焦距，提供了真实成对的高低分辨率图�
 \subsection{实验设置}
 \noindent\textbf{评价指标}\ \ 由于SRN使用成对数据集进行验证，故我们使用PSNR和SSIM来评价重建出来的超分图像在像素和结构上与真实高分辨率图像的相似性。
 
-\noindent\textbf{实现细节}\ \ 对于DSN和SRN的主体网络部分，均沿用了USR-DU的设计。与USR-DU不同的是，DSN中额外加入了加入了一个参考图像生成模块用于生成更加合理的参考图像，其中包含了模糊核估计部分和图像退化部分，如图所示。在DSN中，我们分别使用$192\times192$和$48\times48$的尺寸裁剪高、低分辨率图像，估计的模糊核尺寸设定为$21\times21$，模型以16为batch大小训练了50000个batch，使用Adam优化器，初始学习率为$5\times10^{-5}$，每10000个batch就将学习率减半。在SRN中，我们分别使用$256\times256$和$64\times64$的尺寸裁剪高、低分辨率图像，模型以16为batch大小训练了100000个batch，使用Adam优化器，学习率恒定为$1\times10^{-4}$。二者训练过程，训练集图像均采取了随机的旋转和翻转。我们的方法基于PyTorch和BasicSR框架实现，并使用NVIDIA TESLA A100（40GB）GPU进行训练。
+\noindent\textbf{实现细节}\ \ 对于DSN和SRN的主体网络部分，均沿用了USR-DU的设计。与USR-DU不同的是，DSN中额外加入了加入了一个参考图像生成模块用于生成更加合理的参考图像，其中包含了模糊核估计部分和图像退化部分，如图所示。在DSN中，我们分别使用$192\times192$和$48\times48$的尺寸裁剪高、低分辨率图像，估计的模糊核尺寸设定为$21\times21$，模型以16为batch大小训练了50000个batch，使用Adam优化器，初始学习率为$5\times10^{-5}$，每10000个batch就将学习率减半。在SRN中，我们分别使用$256\times256$和$64\times64$的尺寸裁剪高、低分辨率图像，模型以16为batch大小训练了100000个batch，使用Adam优化器，学习率恒定为$1\times10^{-4}$。二者训练过程，训练集图像均采取了随机的旋转和翻转。我们的方法基于PyTorch和BasicSR\parencite{basicsr}框架实现，并使用NVIDIA TESLA A100（40GB）GPU进行训练。
 \subsection{实验结果}
 \noindent\textbf{定量比较}\ \ 表中展示了UBSR-DU在RealSR-Canon验证集上PSNR和SSIM的表现，可以发现，在这两个指标上，UBSR-DU相对当前最先进的模型均有明显的提升，特别的，PSNR和SSIM比UBSR-DU的表现分别高0.07dB和0.0012，这表明UBSR-DU中所做出的改进对于提升模糊低分辨率图像的超分效果是切实有效的。为了证明我们所提出的方法的对不那么模糊图像的泛化性，我们另外使用 DIV2K 0801-0900 部分图像进行了实验，结果展示在表中。可以发现，超分结果仍然优于优于USR-DU，但提升幅度没有表中那样显著。
 
 \noindent\textbf{感官比较}\ \ 我们在图图图中展示我们的模型和其他当前最先进模型生成的超分图像。其中，图展现了UBSR-DU在文字内容重建方面的优势，图展现了我们的模型对于边缘恢复的能力，图展现了我们的模型对于纹理细节的恢复能力。
 \section{消融实验}
-为了进一步验证我们所提出的方法的有效性和必要性，我们对模糊核估计模型的选择、模糊信息融入、数据集追加等方面进行了充分的消融实验。表中展现了消融实验的结果。
+为了进一步验证我们所提出的方法的有效性和必要性，我们对模糊核估计模型的选择、模糊信息融入、数据集追加等方面进行了充分的消融实验。表\ref{tab:ablation}中展现了消融实验的结果。
+% \begin{table}[htbp]
+%     \begin{tabular}{c|cc|cc}
+%         \toprule  
+%           & 模糊核估计算法 & 模糊信息 & 数据集追加 & PSNR$\uparrow$  &  SSIM$\uparrow$ \\
+%         \midrule
+%         0 & $\xmark$ & & & 26.56 & 0.7736 \\
+%         1(待定) & KULNet & $\cmark$ & $\cmark$ & 26.50 & 0.7630 \\[-1.5ex]\hline\noalign{\vspace{\dimexpr 1.87ex-\doublerulesep}}
+%         2 & UFPNet & $\cmark$ & $\cmark$ & 8 & 9 \\
+%         3 & MANet & $\cmark$ & & 26.42 & 0.7749 \\
+%         4 & $\xmark$ & & $\cmark$ & 26.59 & 0.7662 \\
+%         5 & MANet & $\cmark$ & $\cmark$ & \textbf{26.63} & \textbf{0.7748} \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{消融实验}
+%     \label{tab:ablation}
+% \end{table}
+\begin{table}[htbp]
+    \centering
+    \caption{消融实验}
+    \label{tab:ablation}
+    \begin{tblr}{
+        colspec={cccccc},
+        hline{1,8} = {1pt,solid},
+        hline{2} = {0.5pt,solid},
+        vline{2,3,5} = {0.5pt,solid}
+    }
+        & 模糊核估计算法 & 模糊信息 & 数据集追加 & PSNR$\uparrow$  &  SSIM$\uparrow$ \\
+        0 & \xmark & & & 26.56 & 0.7736 \\
+        1(待定) & KULNet & \cmark & \cmark & 26.50 & 0.7630 \\
+        2 & UFPNet & \cmark & \cmark &  &  \\
+        3 & MANet & \cmark & & 26.42 & 0.7749 \\
+        4 & \xmark & & \cmark & 26.59 & 0.7662 \\
+        5 & MANet & \cmark & \cmark & \textbf{26.63} & \textbf{0.7748} \\
+    \end{tblr}
+\end{table}
+
 \noindent\textbf{模糊核估计模型的选择}\ \ 比较第1、2、3项，此三项中仅有模糊核估计部分发生了变化。可发现基于KULNet核估计的模型PSNR和SSIM均低于USR-DU，说明KULNet对整体模型产生了负优化。而MANet和UFPNet的使用则有利于模型精度的提升\dots。
 
 \noindent\textbf{模糊信息融合和额外数据集共同使用的必要性}\ \ 比较0和3两项，其中0为USR-DU原始模型，3中加入了模糊信息融合部分。第3项的SSIM较第0项有所提升，但PSNR有所下降。比较0和4两项，二者区别仅在于第4项的SRN部分额外使用了RealSR-Nikon训练集高分辨率图像作为训练集的一部分，可以发现\dots。对比0，3，4，5项，可以证明只有模糊信息融合和额外数据集二者共同使用时才能使PSNR与SSIM均有明显的提升。
