@@ -1,9 +1,9 @@
-\section{对此前模型的分析}
+\section{此前模型的不足}
 % USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。图中展示了DSN对DIV2K\parencite{timofte2017ntire}和RealSR-Canon数据集中图像生成低分辨率图像的效果。其中，针对模糊性较低的DIV2K数据集，生成的低分辨率图像与真实的低分辨率图像较为相似，而对于模糊性较高的RealSR-Canon数据集，DSN生成的低分辨率图像会显得过于清晰，同时二者还存在色差的问题。对于造成这种现象的原因，我们推测是由DSN部分直接使用高分辨率图像的双三次下采样结果作为参考图像所导致的，如图虚线部分。由于DSN使用data loss和perceptual loss来对网络进行优化，这使得生成的低分辨率图像在一定程度上近似于无模糊的图像，从而远离了真实的低分辨率图像。因此，为了对此模型进一步优化，提高其泛化能力，我们提出了改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
 
-USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。
-\section{基于不确定性学习的无监督的模糊真实世界图像超分辨率}
-在无监督的超分辨率模型中，我们需要首先生成拟真的低分辨率图像，再对超分网络进行监督式的训练，而对图像的退化过程进行合理的建模将有助于提升低分辨率图像生成的精度。在本节接下来的内容中，我们将首先给出图像的退化模型，随后由此引出我们提出的改进模型UBSR-DU。
+USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。它假设真实的低分辨率图像服从以双三次下采样图像及其不确定性为参数的拉普拉斯分布，故使用图\ref{fig:UBSR-DU}中的虚线过程产生生成的低分辨率图像的参考图像。由于双三次下采样图像具有已知且固定的退化过程，其并不能很好地复现图像退化过程中模糊的多样性。虽然模型可以借助于判别器来生成更加符合真实低分辨率图像特征的图像，但只通过这种方式进行约束会使得生成器的学习较为困难，收敛速度较为缓慢。为了能够使得DSN的生成器能够更加直接地学习到真实低分辨率的特征，我们将对图像的退化模型进行估计，并将其引入到生成器的优化过程中，从而加快其收敛，并使DSN能够生成更加真实的低分辨率图像。
+\section{基于图像退化模型估计的真实图像超分辨方法}
+在无监督的超分辨率模型中，对图像的退化过程进行合理的建模将有助于提升低分辨率图像生成的精度，进而提升超分精度。在本节接下来的内容中，我们将首先给出图像的退化模型，随后由此引出我们提出的改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
 \subsection{图像的退化过程}
 真实世界低分辨率图像的退化过程与合成低分辨率图像的退化过程有着显著的差别。合成图像数据集往往假设低分辨率图像由高分辨率图像经高斯模糊和双三次下采样得到，使用公式表示即为：
 \begin{equation}
@@ -50,7 +50,7 @@ USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率�
 \end{figure}
 
 
-\noindent\textbf{模糊核估计}\ \ 目前，已经有许多成熟的低分辨率图像模糊核估计方法，如KULNet、MANet、UFPNet等，其中有空间不变的核估计，也有空间变化的核估计，虽然这些模型都取得了较大的成功，但它们大多不是专门设计用来进行模糊核估计的，而是属于其他任务内部的一个中间过程，而这些任务的优化的目标往往也不包含模糊核估计精度，换言之，其估计的模糊核本身并不一定精准。而在本文中，为了能得到更加真实的参考图像，我们需要一个能够最精准的估计模糊核本身的模型。我们对Canon数据集训练集高分辨率图像进行了随机的各向异性高斯模糊并进行下采样，手工合成了一系列低分辨率图像，其中，模糊核是已知的。我们分别用KULNet、MANet、UFPNet这三种模糊核估计网络对合成的低分辨率网络进行了核估计，估计结果如图所示。可以看到，KULNet对所有图像均估计出了相似的近乎各向同性的高斯核，与实际的模糊核并不相似，而MANet和UFPNet则估计出了与实际更为相似的模糊核，故首先排除了KULNet的后续使用。为了在MANet和UFPNet中选择更为合适的模型，我们统计了二者估计模糊核的PSNR指标，并最终选择了UFPNet作为UBSR-DU的模糊核估计模型。
+\noindent\textbf{模糊核估计}\ \ 目前，已经有许多成熟的低分辨率图像模糊核估计方法，如KULNet、MANet等，其中有空间不变的核估计，也有空间变化的核估计，虽然这些模型都取得了较大的成功，但它们大多不是专门设计用来进行模糊核估计的，而是属于其他任务内部的一个中间过程，而这些任务的优化的目标往往也不包含模糊核估计精度，换言之，其估计的模糊核本身并不一定精准。而在本文中，为了能得到更加真实的参考图像，我们需要一个能够最精准的估计模糊核本身的模型。我们对Canon数据集训练集高分辨率图像进行了随机的各向异性高斯模糊并进行下采样，手工合成了一系列低分辨率图像，其中，模糊核是已知的。我们分别用KULNet、MANet这二种模糊核估计网络对合成的低分辨率网络进行了核估计，估计结果如图所示。可以看到，KULNet对所有图像均估计出了相似的近乎各向同性的高斯核，与实际的模糊核并不相似，而MANet则估计出了与实际更为相似的模糊核，故排除了KULNet的后续使用，而是使用MANet作为本模型的模糊核估计模块。
 
 \noindent\textbf{参考图像的生成}\ \ 参考图像生成是一个复杂的过程，尤其是当模糊核空间可变时，在这种情况下，无法直接通过PyTorch提供的卷积模块进行图像退化，需要自行实现。直观的方法是使用两个嵌套循环对batch中的每张图像的每个像素分别进行模糊，随后对所有图像进行下采样，然而，在实际操作中，这种计算方法受制于Python的性能问题，不能有效地利用已经过彻底优化的CUDA算子，使得训练速度大幅减缓。为了能够更有效率的执行图像退化操作，我们选择了MANet所提供的图像退化方案。如算法\ref{alg:y_ref}所示。首先，由MANet估计出的空间可变模糊核为一个尺寸为$(B,C,H_{x_r}\cdot W_{x_r},H_{ker}\cdot W_{ker})$的多维矩阵，其中，B为batch大小，C为通道数（对于RGB图图像来说，取3），$H_{x_r},W_{x_r}$为真实高分辨率图像的高和宽，$H_{ker},W_{ker}$为模糊核的高和宽。故对输入图像$x_r$执行UNFOLD操作，使得卷积过程中每个需要执行矩阵乘法的$H_{ker}\times W_{ker}$区域（即每一个滑动窗口）展开为列向量，并将每个通道的所有列向量向量组成二维矩阵，最终，也形成尺寸为$(B,C,H_{x_r}\cdot W_{x_r},H_{ker}\cdot W_{ker})$的多维矩阵。两个矩阵按元素相乘，并在模糊核向量维度上求和(相当于卷积中的求和操作)，最后对结果执行FOLD操作，将矩阵还原为模糊后的图像，并对此图像进行双三次下采样到与DSN生成图像相同尺寸。通过此方式能够最大化地利用利用已经充分优化过的API，从而提高了图像退化的效率，其缺点在于空间复杂度较高，需要较高的显存支持，但与其降低的大量时间成本相比，此缺点可以忽略不计。
 
@@ -115,48 +115,7 @@ RealSR通过调整相机的焦距，提供了真实成对的高低分辨率图�
 \end{table}
 
 
-\noindent\textbf{感官比较}\ \ 我们在图图图中展示我们的模型和其他当前最先进模型生成的超分图像。其中，图展现了UBSR-DU在文字内容重建方面的优势，图展现了我们的模型对于边缘恢复的能力，图展现了我们的模型对于纹理细节的恢复能力。
-
-
-
-% \begin{figure}[htbp]
-%     \begin{minipage}{0.33\textwidth}
-%         \begin{subfigure}{\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{1} 
-%         \end{subfigure}
-%     \end{minipage}
-%     \hfill
-%     \begin{minipage}{0.66\textwidth}
-%         \begin{subfigure}{0.22\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{2} 
-%         \end{subfigure}
-%         \hfill
-%         \begin{subfigure}{0.22\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{3} 
-%         \end{subfigure}
-%         \hfill
-%         \begin{subfigure}{0.22\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{4} 
-%         \end{subfigure}
-
-%         \bigskip % some vertical space between subfigures a/b and c/d...
-%         \begin{subfigure}{0.22\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{5} 
-%         \end{subfigure}
-%         \hfill
-%         \begin{subfigure}{0.22\textwidth}
-%             \includegraphics[width=\linewidth]{imgs/DASR_23.83_0.7483_Canon_020.png}
-%             \caption{6} 
-%         \end{subfigure}
-%     \end{minipage}
-    
-    
-% \end{figure}
+\noindent\textbf{感官比较}\ \ 我们在图\ref{fig:Canon001}、图\ref{fig:Canon020}和图\ref{fig:Canon033}中展示我们的模型和其他当前最先进模型生成的超分图像。从图中可以看到，我们的模型的超分图像清晰度明显优于ESRGAN，ESRGAN的超分图像具有较大模糊，较双三次上采样图像没有明显区别；我们的模型的超分图像相比于DASR来说具有更少的伪影；我们的改进模型相比于原模型USR-DU来说色块的边缘更加锐利。但所有的模型都具有类似的缺陷，即对于过于细化的内容（如图\ref{fig:Canon020}中的英文单词）仍然无法很好地恢复。
 
 \begin{figure}[htbp]
     \captionsetup[subfigure]{labelformat=empty} 
@@ -288,23 +247,22 @@ RealSR通过调整相机的焦距，提供了真实成对的高低分辨率图�
     \label{tab:ablation}
     \begin{tblr}{
         colspec={cccccc},
-        hline{1,8} = {1pt,solid},
+        hline{1,7} = {1pt,solid},
         hline{2} = {0.5pt,solid},
         vline{2,3,5} = {0.5pt,solid}
     }
         & 模糊核估计算法 & 模糊信息 & 数据集追加 & PSNR$\uparrow$  &  SSIM$\uparrow$ \\
         0 & \xmark & & & 26.56 & 0.7736 \\
         1 & KULNet & \cmark & \cmark & 26.50 & \textbf{0.7751} \\
-        2 & UFPNet & \cmark & \cmark &  &  \\
-        3 & MANet & \cmark & & 26.42 & 0.7749 \\ 
-        4 & \xmark & & \cmark & 26.59 & 0.7662 \\
-        5 & MANet & \cmark & \cmark & \textbf{26.63} & 0.7748 \\
+        2 & MANet & \cmark & & 26.42 & 0.7749 \\ 
+        3 & \xmark & & \cmark & 26.59 & 0.7662 \\
+        4 & MANet & \cmark & \cmark & \textbf{26.63} & 0.7748 \\
     \end{tblr}
 \end{table}
 
-\noindent\textbf{模糊核估计模型的选择}\ \ 比较第0、1、3项，其中1、3项中仅有模糊核估计部分发生了变化。可发现基于KULNet核估计的模型虽然SSIM高于USR-DU，但PSNR低于USR-DU，不能说明其整体优于USR-DU。而基于MANet核估计的模型则在两项指标上均优于USR-DU。
+\noindent\textbf{模糊核估计模型的选择}\ \ 比较第0、1、2项，其中1、2项中仅有模糊核估计部分发生了变化。可发现基于KULNet核估计的模型虽然SSIM高于USR-DU，但PSNR低于USR-DU，不能说明其整体优于USR-DU。而基于MANet核估计的模型则在两项指标上均优于USR-DU。
 
-\noindent\textbf{模糊信息融合和额外数据集共同使用的必要性}\ \ 比较0和3两项，其中0为USR-DU原始模型，3中加入了模糊信息融合部分。第3项的SSIM较第0项有所提升，但PSNR有所下降。比较0和4两项，二者区别仅在于第4项的SRN部分额外使用了RealSR-Nikon训练集高分辨率图像作为训练集的一部分，可以发现第4项的PSNR较第0项有所提升，但SSIM有所下降。对比0，3，4，5项，可以证明只有模糊信息融合和额外数据集二者共同使用时才能使PSNR与SSIM均有明显的提升。
+\noindent\textbf{模糊信息融合和额外数据集共同使用的必要性}\ \ 比较0和2两项，其中0为USR-DU原始模型，2中加入了模糊信息融合部分。第2项的SSIM较第0项有所提升，但PSNR有所下降。比较0和3两项，二者区别仅在于第3项的SRN部分额外使用了RealSR-Nikon训练集高分辨率图像作为训练集的一部分，可以发现第3项的PSNR较第0项有所提升，但SSIM有所下降。对比0，2，3，4项，可以证明只有模糊信息融合和额外数据集二者共同使用时才能使PSNR与SSIM均有明显的提升。
 
 综上所述，选择UFPNet作为模糊核估计部分，为DSN的参考图像融合入模糊信息，并在训练SRN过程中额外使用RealSR-Nikon训练集高分辨率图像作为训练集的一部分是必要且有效的措施。
 
