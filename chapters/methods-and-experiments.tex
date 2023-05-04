@@ -50,7 +50,79 @@ USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率�
 \end{figure}
 
 
-\noindent\textbf{模糊核估计}\ \ 目前，已经有许多成熟的低分辨率图像模糊核估计方法，如KULNet、MANet等，其中有空间不变的核估计，也有空间变化的核估计，虽然这些模型都取得了较大的成功，但它们大多不是专门设计用来进行模糊核估计的，而是属于其他任务内部的一个中间过程，而这些任务的优化的目标往往也不包含模糊核估计精度，换言之，其估计的模糊核本身并不一定精准。而在本文中，为了能得到更加真实的参考图像，我们需要一个能够最精准的估计模糊核本身的模型。我们对Canon数据集训练集高分辨率图像进行了随机的各向异性高斯模糊并进行下采样，手工合成了一系列低分辨率图像，其中，模糊核是已知的。我们分别用KULNet、MANet这二种模糊核估计网络对合成的低分辨率网络进行了核估计，估计结果如图所示。可以看到，KULNet对所有图像均估计出了相似的近乎各向同性的高斯核，与实际的模糊核并不相似，而MANet则估计出了与实际更为相似的模糊核，故排除了KULNet的后续使用，而是使用MANet作为本模型的模糊核估计模块。
+\noindent\textbf{模糊核估计}\ \ 目前，已经有许多成熟的低分辨率图像模糊核估计方法，如KULNet、MANet等，其中有空间不变的核估计，也有空间变化的核估计，虽然这些模型都取得了较大的成功，但它们大多不是专门设计用来进行模糊核估计的，而是属于其他任务内部的一个中间过程，而这些任务的优化的目标往往也不包含模糊核估计精度，换言之，其估计的模糊核本身并不一定精准。而在本文中，为了能得到更加真实的参考图像，我们需要一个能够最精准的估计模糊核本身的模型。我们对Canon数据集训练集高分辨率图像进行了随机的各向异性高斯模糊并进行下采样，手工合成了一系列低分辨率图像，其中，模糊核是已知的。我们分别用KULNet、MANet这二种模糊核估计网络对上述合成的低分辨率图像进行了核估计，实际的模糊核与估计的模糊核如图\ref{fig:ker_kul}和图\ref{fig:ker_manet}所示。可以看到，KULNet对所有图像均估计出了相似的近乎各向同性的高斯核，与实际的模糊核并不相似，而MANet则估计出了与实际更为相似的模糊核，故排除了KULNet的后续使用，而是使用MANet作为本模型的模糊核估计模块。
+
+\begin{figure}[htbp]
+    \captionsetup[subfigure]{labelformat=empty} 
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_0_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_1_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_3_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_5_real.png}
+    \end{subfigure}
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_0_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_1_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_3_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/kul_ker_5_fake.png}
+    \end{subfigure}
+    \caption{KULNet模糊核估计：其中第一排是真实模糊核，第二排是对应的估计模糊核}
+    \label{fig:ker_kul}
+\end{figure}
+
+\begin{figure}[htbp]
+    \captionsetup[subfigure]{labelformat=empty} 
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_0_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_2_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_3_real.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_5_real.png}
+    \end{subfigure}
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_0_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_2_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_3_fake.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.24\textwidth}
+        \includegraphics[width=\linewidth]{imgs/kernels/manet_ker_5_fake.png}
+    \end{subfigure}
+    \caption{MANet模糊核估计：其中第一排是真实模糊核，第二排是对应的估计模糊核}
+    \label{fig:ker_manet}
+\end{figure}
 
 \noindent\textbf{参考图像的生成}\ \ 参考图像生成是一个复杂的过程，尤其是当模糊核空间可变时，在这种情况下，无法直接通过PyTorch提供的卷积模块进行图像退化，需要自行实现。直观的方法是使用两个嵌套循环对batch中的每张图像的每个像素分别进行模糊，随后对所有图像进行下采样，然而，在实际操作中，这种计算方法受制于Python的性能问题，不能有效地利用已经过彻底优化的CUDA算子，使得训练速度大幅减缓。为了能够更有效率的执行图像退化操作，我们选择了MANet所提供的图像退化方案。如算法\ref{alg:y_ref}所示。首先，由MANet估计出的空间可变模糊核为一个尺寸为$(B,C,H_{x_r}\cdot W_{x_r},H_{ker}\cdot W_{ker})$的多维矩阵，其中，B为batch大小，C为通道数（对于RGB图图像来说，取3），$H_{x_r},W_{x_r}$为真实高分辨率图像的高和宽，$H_{ker},W_{ker}$为模糊核的高和宽。故对输入图像$x_r$执行UNFOLD操作，使得卷积过程中每个需要执行矩阵乘法的$H_{ker}\times W_{ker}$区域（即每一个滑动窗口）展开为列向量，并将每个通道的所有列向量向量组成二维矩阵，最终，也形成尺寸为$(B,C,H_{x_r}\cdot W_{x_r},H_{ker}\cdot W_{ker})$的多维矩阵。两个矩阵按元素相乘，并在模糊核向量维度上求和(相当于卷积中的求和操作)，最后对结果执行FOLD操作，将矩阵还原为模糊后的图像，并对此图像进行双三次下采样到与DSN生成图像相同尺寸。通过此方式能够最大化地利用利用已经充分优化过的API，从而提高了图像退化的效率，其缺点在于空间复杂度较高，需要较高的显存支持，但与其降低的大量时间成本相比，此缺点可以忽略不计。
 
