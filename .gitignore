@@ -32,3 +32,4 @@ build
 test
 *.pdf
 !xdulogo.pdf
+texcount.pl

@@ -1,21 +1,14 @@
-\section{此前模型的不足}
-% USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。图中展示了DSN对DIV2K\parencite{timofte2017ntire}和RealSR-Canon数据集中图像生成低分辨率图像的效果。其中，针对模糊性较低的DIV2K数据集，生成的低分辨率图像与真实的低分辨率图像较为相似，而对于模糊性较高的RealSR-Canon数据集，DSN生成的低分辨率图像会显得过于清晰，同时二者还存在色差的问题。对于造成这种现象的原因，我们推测是由DSN部分直接使用高分辨率图像的双三次下采样结果作为参考图像所导致的，如图虚线部分。由于DSN使用data loss和perceptual loss来对网络进行优化，这使得生成的低分辨率图像在一定程度上近似于无模糊的图像，从而远离了真实的低分辨率图像。因此，为了对此模型进一步优化，提高其泛化能力，我们提出了改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
+% USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。图中展示了DSN对DIV2K\cite{timofte2017ntire}和RealSR-Canon数据集中图像生成低分辨率图像的效果。其中，针对模糊性较低的DIV2K数据集，生成的低分辨率图像与真实的低分辨率图像较为相似，而对于模糊性较高的RealSR-Canon数据集，DSN生成的低分辨率图像会显得过于清晰，同时二者还存在色差的问题。对于造成这种现象的原因，我们推测是由DSN部分直接使用高分辨率图像的双三次下采样结果作为参考图像所导致的，如图虚线部分。由于DSN使用data loss和perceptual loss来对网络进行优化，这使得生成的低分辨率图像在一定程度上近似于无模糊的图像，从而远离了真实的低分辨率图像。因此，为了对此模型进一步优化，提高其泛化能力，我们提出了改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
 
-USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。它假设真实的低分辨率图像服从以双三次下采样图像及其不确定性为参数的拉普拉斯分布，故使用图\ref{fig:UBSR-DU}中的虚线过程产生生成的低分辨率图像的参考图像。由于双三次下采样图像具有已知且固定的退化过程，其并不能很好地复现图像退化过程中模糊的多样性。虽然模型可以借助于判别器来生成更加符合真实低分辨率图像特征的图像，但只通过这种方式进行约束会使得生成器的学习较为困难，收敛速度较为缓慢。为了能够使得DSN的生成器能够更加直接地学习到真实低分辨率的特征，我们将对图像的退化模型进行估计，并将其引入到生成器的优化过程中，从而加快其收敛，并使DSN能够生成更加真实的低分辨率图像。
+
 \section{基于图像退化模型估计的真实图像超分辨方法}
-在无监督的超分辨率模型中，对图像的退化过程进行合理的建模将有助于提升低分辨率图像生成的精度，进而提升超分精度。在本节接下来的内容中，我们将首先给出图像的退化模型，随后由此引出我们提出的改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
+USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率图像。它假设真实的低分辨率图像服从以双三次下采样图像及其不确定性为参数的拉普拉斯分布，故使用图\ref{fig:UBSR-DU}中的虚线过程产生生成的低分辨率图像的参考图像。由于双三次下采样图像具有已知且固定的退化过程，其并不能很好地复现图像退化过程中模糊的多样性。虽然模型可以借助于判别器来生成更加符合真实低分辨率图像特征的图像，但只通过这种方式进行约束会使得生成器的学习较为困难，收敛速度较为缓慢。为了能够使得DSN的生成器能够更加直接地学习到真实低分辨率的特征，我们将对图像的退化模型进行估计，并将其引入到生成器的优化过程中，从而加快其收敛，并使DSN能够生成更加真实的低分辨率图像。在本节接下来的内容中，我们将首先给出图像的退化模型，随后由此引出我们提出的改进模型UBSR-DU，即基于不确定性学习的无监督的模糊真实世界图像超分辨率（Unsupervised Blurry real-world image SR with learned Degradation Uncertainty）。
 \subsection{图像的退化过程}
-真实世界低分辨率图像的退化过程与合成低分辨率图像的退化过程有着显著的差别。合成图像数据集往往假设低分辨率图像由高分辨率图像经高斯模糊和双三次下采样得到，使用公式表示即为：
-\begin{equation}
-    \mathbi{I}^{LR}=(\vb*{k}_g\otimes \mathbi{I}^{HR})\downarrow_s
-\end{equation}
-其中，$\mathbi{I}^{LR}$和$\mathbi{I}^{HR}$分别表示低分辨率图像和高分辨率图像，$\vb*{k}_g$表示高斯核，$\otimes$表示卷积操作，$\downarrow_s$表示双三次下采样。
-
-对于真实低分辨率图像，情况要复杂的多，不过，其退化过程往往也可以近似为以下过程：首先使用各向异性高斯核对高分辨率图像进行滤波，再经过双三次下采样，最后加上噪声。使用公式描述即为
+合成图像的退化过程可由\ref{equ:bicubic}表示，其退化过程较为简单。对于真实低分辨率图像，情况要复杂的多，不过，其退化过程往往也可以近似为以下过程：首先使用各向异性高斯核对高分辨率图像进行滤波，再经过双三次下采样，最后加上噪声。使用公式描述即为
 \begin{equation}
     \mathbi{I}^{LR}=(\vb*{k}\otimes \mathbi{I}^{HR})\downarrow_s+\mathbi{n}
 \end{equation}
-其中$\vb*{k}$为未知的各向异性高斯核，$\mathbi{n}$为未知的噪声。是所以认定为各向异性高斯核，是因为\parencite{Gau_1}\parencite{Gau_2}\parencite{Gau_3}\parencite{Gau_4}\parencite{Gau_5}等工作表明，各向异性高斯核先验对超分辨率任务来说是完备的。
+其中$\vb*{k}$为未知的各向异性高斯核，$\mathbi{n}$为未知的噪声。是所以认定为各向异性高斯核，是因为\cite{Gau_1}\cite{Gau_2}\cite{Gau_3}\cite{Gau_4}\cite{Gau_5}等工作表明，各向异性高斯核先验对超分辨率任务来说是完备的。
 %此处引用FKP提到的文章
 
 以上过程假设图像退化时，模糊核是空间不变的，即对每一个像素点，都有完全相同的模糊核，然而在实际情况中，由于物体运动、景深等因素，图像各处的模糊程度往往是不同的，于是就有了空间可变的真实图像退化过程。
@@ -137,7 +130,7 @@ USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率�
 \begin{equation}
     \mathcal{L}_{kl\_per}=\mathbb{E}_{\vb*{y}_g}\{D_{\text{KL}}[L(\Phi(\vb*{y}_g),\bm{\theta})\|L(\Phi(\vb*{y}_ref),\mathbi{I})]\}
 \end{equation}
-其中，$\Phi(\cdot)$为VGG-19\parencite{simonyan2014very}。
+其中，$\Phi(\cdot)$为VGG-19\cite{simonyan2014very}。
 
 对抗性损失：使得DSN能够学到真实低分辨率图像纹理细节信息。此处使用了高通滤波保留图像的高频纹理信息。
 \begin{equation}
@@ -152,14 +145,24 @@ USR-DU的DSN部分负责由高分辨率图像生成对应的拟真低分辨率�
 其中，$\alpha_1,\alpha_1,\alpha_1$为超参数，在本文中，依次取值为100.0，1.0，1.0。
 
 DSN的判别器损失函数与原USR-DU相同。
-
-\subsection{对文字内容重建能力的提升}
-RealSR通过调整相机的焦距，提供了真实成对的高低分辨率图像数据集，其低分辨率图像具有较强的模糊性。由于本文主要对USR-DU的DSN部分在模糊性学习上做了改进，故使用200张RealSR-Canon-x4的训练集低分辨率图像作为DSN的训练集低分辨率图像，而使用DIV2K提供的800张训练集高分辨率图像（0001-0800）作为DSN训练集的高分辨率图像。对于SRN部分，与USR-DU不同，本文除了使用DIV2K训练集高分辨率图像以外，另外添加了RealSR-Nikon的训练集高分辨率图像，一起组成SRN的训练集高分辨率图像，并使用训练好的DSN生成对应的低分辨率图像，组成SRN的训练集。这是因为SRN的验证集为RealSR-Canon验证集，其中包含了较多的文字内容，而DIV2K中的文字内容较少，会使得训练出的模型生成的超分辨率图像中文字分辨能力较低。故额外添加了包含较多的文字内容的RealSR-Nikon训练集以增强模型对文字的重建能力。
 \section{实验}
 \subsection{实验设置}
-\noindent\textbf{评价指标}\ \ 由于SRN使用成对数据集进行验证，故我们使用PSNR和SSIM来评价重建出来的超分图像在像素和结构上与真实高分辨率图像的相似性。
+\noindent\textbf{评价指标}\ \ 由于SRN使用成对数据集进行验证，故我们使用PSNR和SSIM来评价重建出来的超分图像在像素和结构上与真实高分辨率图像的相似性。其中，PSNR（Peak Signal-to-Noise Ratio，峰值信噪比）通过比较原始图像与经过处理后的图像的信噪比来衡量两张图像之间的差距，单位为分贝（dB），取值范围为0到无穷大。PSNR越大，则说明两张图像越相近。PSNR的定义式为：
+\begin{equation}
+    \text{PSNR}=10\cdot \log_{10}(\frac{\text{MAX}_I^2}{\text{MSE}})
+\end{equation}
+其中，$MAX_I$是像素的最大值，这取决于像素值是$0\sim 255$还是$0\sim 1$；MSE（Mean Square Erros）是两张图像之间的均方误差。而 SSIM\cite{wang2002universal}（Structural Similarity Index Measure，结构相似性指标）除了考虑除了像PSNR考虑像素间差异以外，还考虑图像的结构、纹理、对比度等因素。SSIM没有单位，取值范围为-1到1，SSIM越大，说明两张图像相似度越高。SSIM的定义为
+\begin{equation}
+    \begin{aligned}
+        SSIM(x,y)&=[l(x,y)s(x,y)c(x,y)]
+                 &=\frac{(2\mu_x\mu_y+c_1)(2\sigma_{xy}+c_2)}{(\mu_x^2\mu_y^2+c_1)(\sigma_x^2+\sigma_y^2+c_2)}
+    \end{aligned}
+\end{equation}
+其中，$l(x,y)$代表亮度，$s(x,y)$代表结构，$c(x,y)$代表对比度。$\mu_x$、$\mu_y$代表$x、y$的均值，$\sigma_x$、$\sigma_y$代表$x、y$的方差，$\sigma_{xy}$代表$x、y$的协方差，$c_1$、$c_2$为常数。实际计算中，采用滑动窗口法，即计算图像中每一个窗口的SSIM，最后取其平均值。
 
-\noindent\textbf{实现细节}\ \ 对于DSN和SRN的主体网络部分，均沿用了USR-DU的设计。与USR-DU不同的是，DSN中额外加入了加入了一个参考图像生成模块用于生成更加合理的参考图像，其中包含了模糊核估计部分和图像退化部分，如图所示。在DSN中，我们分别使用$192\times192$和$48\times48$的尺寸裁剪高、低分辨率图像，估计的模糊核尺寸设定为$21\times21$，模型以16为batch大小训练了50000个batch，使用Adam优化器，初始学习率为$5\times10^{-5}$，每10000个batch就将学习率减半。在SRN中，我们分别使用$256\times256$和$64\times64$的尺寸裁剪高、低分辨率图像，模型以16为batch大小训练了100000个batch，使用Adam优化器，学习率恒定为$1\times10^{-4}$。二者训练过程，训练集图像均采取了随机的旋转和翻转。我们的方法基于PyTorch和BasicSR\parencite{basicsr}框架实现，并使用NVIDIA TESLA A100（40GB）GPU进行训练。
+\noindent\textbf{数据集使用}\ \ RealSR\cite{cai2019toward}通过调整相机的焦距，提供了真实成对的高低分辨率图像数据集，其低分辨率图像具有较强的模糊性。由于本文主要对USR-DU的DSN部分在模糊性学习上做了改进，故使用200张RealSR-Canon-x4的训练集低分辨率图像作为DSN的训练集低分辨率图像，而使用DIV2K\cite{Agustsson_2017_CVPR_Workshops}提供的800张训练集高分辨率图像（0001-0800）作为DSN训练集的高分辨率图像。对于SRN部分，与USR-DU不同，本文除了使用DIV2K训练集高分辨率图像以外，另外添加了RealSR-Nikon的训练集高分辨率图像，一起组成SRN的训练集高分辨率图像，并使用训练好的DSN生成对应的低分辨率图像，组成SRN的训练集。这是因为SRN的验证集为RealSR-Canon验证集，其中包含了较多的文字内容，而DIV2K中的文字内容较少，会使得训练出的模型生成的超分辨率图像中文字分辨能力较低。故额外添加了包含较多的文字内容的RealSR-Nikon训练集以增强模型对文字的重建能力。
+
+\noindent\textbf{实现细节}\ \ 对于DSN和SRN的主体网络部分，均沿用了USR-DU的设计。与USR-DU不同的是，DSN中额外加入了加入了一个参考图像生成模块用于生成更加合理的参考图像，其中包含了模糊核估计部分和图像退化部分，如图所示。在DSN中，我们分别使用$192\times192$和$48\times48$的尺寸裁剪高、低分辨率图像，估计的模糊核尺寸设定为$21\times21$，模型以16为batch大小训练了50000个batch，使用Adam优化器，初始学习率为$5\times10^{-5}$，每10000个batch就将学习率减半。在SRN中，我们分别使用$256\times256$和$64\times64$的尺寸裁剪高、低分辨率图像，模型以16为batch大小训练了100000个batch，使用Adam优化器，学习率恒定为$1\times10^{-4}$。二者训练过程，训练集图像均采取了随机的旋转和翻转。我们的方法基于PyTorch和BasicSR\cite{basicsr}框架实现，并使用NVIDIA TESLA A100（40GB）GPU进行训练。
 \subsection{实验结果}
 \noindent\textbf{定量比较}\ \ 表\ref{tab:results}中展示了我们提出的改进模型UBSR-DU在RealSR-Canon数据集上与几种当前最先进模型的表现的对比，其中包括了ZSSR、（使用合成数据集）预训练的ESRGAN、DASR、原模型USR-DU。我们还展示了使用RealSR-Canon训练集部分成对图像进行监督式训练的ESRGAN的表现作为参考。从表中可以看到，我们的改进模型UBSR-DU的表现在RealSR-Canon数据集上超出了所有当前最先进的方法，尤其是相比原始模型USR-DU在PSNR和SSIM这两个指标上分别提高了0.07dB和0.0012。
 
